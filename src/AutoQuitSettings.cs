@@ -11,7 +11,7 @@ namespace AutoQuit
         {
             Enable = new ToggleNode(false);
             flasksTitle = new EmptyNode();
-            emptyHPFlasks = new RangeNode<int>(0, 0, 2);
+            emptyHPFlasksMode = new RangeNode<int>(0, 0, 2);
             percentHPQuit = new RangeNode<float>(35f, 0f, 100f);
             percentESQuit = new RangeNode<float>(35f, 0f, 100f);
             forcedAutoQuit = Keys.F4;
@@ -28,7 +28,7 @@ namespace AutoQuit
             "\nPlease note that mode #2 will not allow you to quit if you have got at least one non-empty life flask.", 20)]
         public EmptyNode flasksTitle { get; set; }
         [Menu("Select mode", 22, 20)]
-        public RangeNode<int> emptyHPFlasks { get; set; }
+        public RangeNode<int> emptyHPFlasksMode { get; set; }
         [Menu("Min % Life to Auto Quit", 30)]
         public RangeNode<float> percentHPQuit { get; set; }
         [Menu("Min % ES Auto Quit", 40)]

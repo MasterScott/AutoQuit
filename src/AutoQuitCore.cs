@@ -44,44 +44,46 @@ namespace AutoQuit
 
         public override void Render()
         {
-            base.Render();
-
             // Panic Quit Key.
-            //if (WinApi.IsKeyDown(Settings.forcedAutoQuit)) -----------------------
-            if ( (WinApi.GetAsyncKeyState(Settings.forcedAutoQuit) & 0x8000) != 0) Quit();
+            if ((WinApi.GetAsyncKeyState(Settings.forcedAutoQuit) & 0x8000) != 0) Quit();
 
-            if (GameController.Area.CurrentArea.IsTown || Settings.suspend && GameController.Area.CurrentArea.IsHideout)
+            if (GameController.Area.CurrentArea.IsTown || Settings.suspend && GameController.Area.CurrentArea.IsHideout) return;
+
+            var localPlayer = GameController.Game.IngameState.Data.LocalPlayer;
+            if (!Settings.Enable || !localPlayer.IsValid || !ShouldQuit(localPlayer)) return;
+
+            try
             {
-                return;
+                Quit();
             }
-
-            var LocalPlayer = GameController.Game.IngameState.Data.LocalPlayer;
-            var PlayerHealth = LocalPlayer.GetComponent<Life>();
-            bool _gotCharges = gotCharges();
-            int mode = Settings.emptyHPFlasks.Value;
-
-            if (Settings.Enable && LocalPlayer.IsValid)
+            catch (Exception e)
             {
-                if ((Math.Round(PlayerHealth.HPPercentage, 3) * 100 < (Settings.percentHPQuit.Value)
-                    || PlayerHealth.MaxES > 0 && (Math.Round(PlayerHealth.ESPercentage, 3) * 100 < (Settings.percentESQuit.Value)))
-
-                    // simple implication, quit on low HP/ES and if you have no more flask uses
-                    && mode < 2 | _gotCharges
-
-                    // force quit if you have no more flask uses
-                    || mode == 1 && _gotCharges)
-                {
-                    try
-                    {
-                        Quit();
-                    }
-                    catch (Exception e)
-                    {
-                        LogError($"{e}", errmsg_time);
-                    }
-                }
+                LogError($"{e}", errmsg_time);
             }
         }
+        private bool ShouldQuit(Entity localPlayer)
+        {
+            var playerHealth = localPlayer.GetComponent<Life>();
+            bool gotCharges = this.gotCharges();
+
+            var healthTooLow = Math.Round(playerHealth.HPPercentage, 3) * 100 < (Settings.percentHPQuit.Value);
+            var energyShieldTooLow = playerHealth.MaxES > 0 && (Math.Round(playerHealth.ESPercentage, 3) * 100 < (Settings.percentESQuit.Value));
+
+             /*Quit if HP flasks are empty", "0 -> Disable; 1 -> Enable; 2 -> Only when HP/ES min values was reached*/
+
+            switch (Settings.emptyHPFlasksMode.Value)
+            {
+                case 0:
+                    return healthTooLow || energyShieldTooLow;
+                case 1:
+                    return healthTooLow || energyShieldTooLow || !gotCharges;
+                case 2:
+                    return (healthTooLow || energyShieldTooLow) && !gotCharges;
+                default:
+                    return true;
+            }
+        }
+
         public bool gotCharges()
         {
             int charges = 0;
